@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — Internship Hunter{% endblock %}
+{% block nav_settings %}nav-active{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div x-data="settingsPage()" x-init="load()" class="space-y-6 max-w-3xl">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-900">Settings</h2>
+      <p class="text-sm text-gray-500">Configure your outreach targets, AI prompt, and integrations.</p>
+    </div>
+    <button @click="save()" :disabled="saving"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-accent-600 px-4 py-2 text-sm font-medium text-white hover:bg-accent-700 disabled:opacity-50">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+      <span x-text="saved ? 'Saved!' : saving ? 'Saving...' : 'Save Settings'"></span>
+    </button>
+  </div>
+
+  <!-- Target Filters -->
+  <div class="rounded-xl border border-gray-200 bg-white">
+    <div class="border-b px-5 py-3">
+      <h3 class="text-sm font-medium text-gray-700">Target Filters</h3>
+      <p class="text-xs text-gray-400">Define what kind of companies the scraper should find.</p>
+    </div>
+    <div class="px-5 py-4 space-y-4">
+      <div class="flex items-center gap-3">
+        <svg class="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg>
+        <div class="flex-1">
+          <label class="text-xs font-medium text-gray-500">Industry</label>
+          <input type="text" x-model="form.industry" placeholder="e.g. Fintech, SaaS, Developer Tools"
+                 class="mt-0.5 w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500">
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <svg class="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <div class="flex-1">
+          <label class="text-xs font-medium text-gray-500">Location</label>
+          <input type="text" x-model="form.location" placeholder="e.g. Bangalore, India"
+                 class="mt-0.5 w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500">
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <svg class="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <div class="flex-1">
+          <label class="text-xs font-medium text-gray-500">Company Size</label>
+          <input type="text" x-model="form.companySize" placeholder="e.g. 11-50, 51-200"
+                 class="mt-0.5 w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500">
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <svg class="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        <div class="flex-1">
+          <label class="text-xs font-medium text-gray-500">Role Keywords</label>
+          <input type="text" x-model="form.roleKeywords" placeholder="e.g. Software Engineering Intern"
+                 class="mt-0.5 w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Prompt Editor -->
+  <div class="rounded-xl border border-gray-200 bg-white">
+    <div class="border-b px-5 py-3">
+      <h3 class="text-sm font-medium text-gray-700">AI Email Prompt</h3>
+      <p class="text-xs text-gray-400">This system prompt is sent to the AI when generating outreach emails.</p>
+    </div>
+    <div class="px-5 py-4">
+      <textarea x-model="form.prompt" rows="10"
+                class="w-full rounded-lg border bg-gray-50 p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 resize-y"
+                placeholder="Enter your AI system prompt here..."></textarea>
+      <p class="mt-2 text-xs text-gray-400">Be specific about tone, length, and what to include.</p>
+    </div>
+  </div>
+
+  <!-- Sending -->
+  <div class="rounded-xl border border-gray-200 bg-white">
+    <div class="border-b px-5 py-3">
+      <h3 class="text-sm font-medium text-gray-700">Sending</h3>
+      <p class="text-xs text-gray-400">Control how emails are sent.</p>
+    </div>
+    <div class="px-5 py-4 space-y-4">
+      <div class="flex items-center gap-3">
+        <svg class="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        <div class="flex-1">
+          <label class="text-xs font-medium text-gray-500">Daily Send Limit</label>
+          <input type="number" x-model="form.dailyLimit" placeholder="50"
+                 class="mt-0.5 w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500">
+        </div>
+      </div>
+      <div class="flex items-center justify-between rounded-lg border p-4">
+        <div class="flex items-center gap-3">
+          <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Require approval before sending</p>
+            <p class="text-xs text-gray-400">Drafts must be manually approved before dispatch.</p>
+          </div>
+        </div>
+        <div @click="form.requireApproval = !form.requireApproval"
+             class="toggle-switch" :class="form.requireApproval ? 'on' : 'off'">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integrations -->
+  <div class="rounded-xl border border-gray-200 bg-white">
+    <div class="border-b px-5 py-3">
+      <h3 class="text-sm font-medium text-gray-700">Integrations</h3>
+      <p class="text-xs text-gray-400">Connect services and check API key status.</p>
+    </div>
+    <div class="px-5 py-4 space-y-3">
+      <!-- Gmail -->
+      <div class="flex items-center justify-between rounded-lg border p-4">
+        <div class="flex items-center gap-3">
+          <svg class="h-4 w-4" :class="authStatus.gmailConnected ? 'text-green-500' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Gmail</p>
+            <p class="text-xs text-gray-400" x-text="authStatus.gmailConnected ? 'Connected — ready to send' : 'Not connected'"></p>
+          </div>
+        </div>
+        <a x-show="!authStatus.gmailConnected" href="/auth/gmail"
+           class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Connect
+        </a>
+      </div>
+
+      <!-- API Keys -->
+      <template x-for="svc in services" :key="svc.name">
+        <div class="flex items-center justify-between rounded-lg border p-4">
+          <div class="flex items-center gap-3">
+            <svg class="h-4 w-4" :class="svc.configured ? 'text-green-500' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <p class="text-sm font-medium text-gray-900" x-text="svc.name"></p>
+              <p class="text-xs text-gray-400" x-text="svc.description"></p>
+            </div>
+          </div>
+          <span class="text-xs text-gray-400" x-text="svc.configured ? 'Set in .env' : svc.note"></span>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function settingsPage() {
+  return {
+    form: {
+      prompt: '', industry: '', location: '', companySize: '', roleKeywords: '',
+      dailyLimit: '50', requireApproval: true,
+    },
+    authStatus: {},
+    saving: false,
+    saved: false,
+
+    get services() {
+      return [
+        { name: 'Groq / Gemini (AI)', description: 'Email generation AI model keys', configured: this.authStatus.groqConfigured || this.authStatus.geminiConfigured, note: 'Missing in .env' },
+        { name: 'Apollo.io', description: 'Company & contact scraping', configured: this.authStatus.apolloConfigured, note: 'Optional — set APOLLO_API_KEY in .env' },
+        { name: 'ZeroBounce', description: 'Email verification', configured: this.authStatus.zeroBounceConfigured, note: 'Optional — set ZEROBOUNCE_API_KEY in .env' },
+      ];
+    },
+
+    async load() {
+      const [settingsRes, authRes] = await Promise.all([
+        fetch('/api/settings'), fetch('/auth/status'),
+      ]);
+      const settings = await settingsRes.json();
+      this.authStatus = await authRes.json();
+
+      this.form.prompt = settings.ai_prompt || '';
+      this.form.industry = settings.target_industry || '';
+      this.form.location = settings.target_location || '';
+      this.form.companySize = settings.target_company_size || '';
+      this.form.roleKeywords = settings.target_role_keywords || '';
+      this.form.dailyLimit = String(settings.daily_send_limit || 50);
+      this.form.requireApproval = settings.require_approval !== false;
+    },
+
+    async save() {
+      this.saving = true;
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ai_prompt: this.form.prompt,
+          target_industry: this.form.industry,
+          target_location: this.form.location,
+          target_company_size: this.form.companySize,
+          target_role_keywords: this.form.roleKeywords,
+          daily_send_limit: this.form.dailyLimit,
+          require_approval: this.form.requireApproval,
+        }),
+      });
+      this.saving = false;
+      this.saved = true;
+      setTimeout(() => this.saved = false, 2000);
+    },
+  };
+}
+</script>
+{% endblock %}

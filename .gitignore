@@ -1,13 +1,30 @@
-node_modules/
-dist/
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Environment
 .env
 .env.local
+
+# Logs
 *.log
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Prisma
-backend/prisma/migrations/
+# Alembic
+alembic/versions/*.py
+!alembic/versions/.gitkeep
 
-# Vite
-frontend/.vite/
+# IDE
+.vscode/
+.idea/
+
+# Old Node.js (can delete these folders)
+node_modules/
+dist/

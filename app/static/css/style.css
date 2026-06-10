@@ -1,0 +1,95 @@
+/* ── Custom styles on top of Tailwind CDN ─────────────────── */
+
+:root {
+  --accent: 215 60% 50%;      /* slate blue */
+  --accent-hover: 215 60% 42%;
+}
+
+/* Smooth page transitions with HTMX */
+.htmx-swapping { opacity: 0; transition: opacity 0.15s ease-out; }
+.htmx-settling { opacity: 1; transition: opacity 0.15s ease-in; }
+
+/* Status badge colors */
+.badge-discovered { background: #e2e8f0; color: #475569; }
+.badge-verified   { background: #dbeafe; color: #1d4ed8; }
+.badge-emailed    { background: #fef3c7; color: #92400e; }
+.badge-replied    { background: #d1fae5; color: #065f46; }
+.badge-interview  { background: #ede9fe; color: #5b21b6; }
+.badge-draft      { background: #f1f5f9; color: #64748b; }
+.badge-approved   { background: #e0f2fe; color: #0369a1; }
+.badge-sent       { background: #fef9c3; color: #854d0e; }
+.badge-opened     { background: #fce7f3; color: #9d174d; }
+.badge-bounced    { background: #fee2e2; color: #991b1b; }
+.badge-follow_up_sent { background: #f0fdf4; color: #166534; }
+
+/* Sidebar active item */
+.nav-active {
+  background: hsl(var(--accent) / 0.1);
+  color: hsl(var(--accent));
+  font-weight: 600;
+}
+
+/* Pipeline connector line */
+.pipeline-line {
+  height: 2px;
+  background: #e2e8f0;
+  flex: 1;
+}
+.pipeline-line.active {
+  background: hsl(var(--accent));
+}
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-switch.on  { background: hsl(var(--accent)); }
+.toggle-switch.off { background: #cbd5e1; }
+.toggle-switch .toggle-dot {
+  position: absolute;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+.toggle-switch.on .toggle-dot  { transform: translateX(20px); }
+.toggle-switch.off .toggle-dot { transform: translateX(2px); }
+
+/* Slide-over panel */
+.slide-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 480px;
+  max-width: 100vw;
+  background: white;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+  z-index: 50;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+}
+.slide-panel.open { transform: translateX(0); }
+
+/* Overlay */
+.panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 40;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+  body { background: #0f172a; color: #e2e8f0; }
+  .slide-panel { background: #1e293b; }
+}

@@ -1,88 +1,85 @@
 # Internship Hunter
 
-AI-powered job outreach system that automatically finds companies, personalizes cold emails using Claude, sends them via Gmail, and tracks replies — all from a single dashboard.
+AI-powered job outreach system that automatically finds companies, personalizes cold emails using AI, sends them via Gmail, and tracks replies — all from a single dashboard.
+
+## Tech Stack
+
+- **Backend**: Python 3.11+ / FastAPI / SQLAlchemy (async)
+- **Frontend**: Jinja2 templates + Tailwind CSS + HTMX + Alpine.js
+- **Database**: PostgreSQL (Supabase free tier)
+- **AI**: Groq (Llama 3.3 70B, free tier)
+- **Scraping**: Apollo.io API + Playwright fallback
+- **Email**: Gmail API (OAuth2)
+- **Verification**: ZeroBounce
 
 ## Architecture
 
 ```
-frontend/          React + Vite + Tailwind + shadcn/ui
-backend/
-  src/
-    routes/        Express REST API
-    services/      Business logic (scraper, AI writer, email sender)
-    jobs/          BullMQ workers
-    lib/           Prisma client singleton
-  prisma/          Schema + migrations + seed
+app/
+  main.py           FastAPI entry point + page routes
+  config.py         Pydantic settings (loads .env)
+  database.py       Async SQLAlchemy engine
+  models.py         ORM models (companies, emails, agent_runs, settings)
+  routes/           REST API endpoints
+  services/         Business logic (scraper, AI writer, sender, scheduler)
+  templates/        Jinja2 HTML templates (dashboard, emails, settings)
+  static/css/       Custom styles
+seed.py             Seed default settings + test companies
+requirements.txt    Python dependencies
 ```
-
-## Prerequisites
-
-- **Node.js** 18+
-- **PostgreSQL** — free via [Supabase](https://supabase.com)
-- **Redis** — free via [Upstash](https://upstash.com) (needed for job queue in Session 5)
 
 ## Quick Start
 
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/internship-hunter.git
-cd internship-hunter
+git clone https://github.com/kshitizkannojia/internship-job-hunter.git
+cd internship-job-hunter
 
-# Backend
-cd backend
-npm install
-cp .env.example .env   # fill in your keys
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
 
-# Frontend
-cd ../frontend
-npm install
+pip install -r requirements.txt
+playwright install chromium
 ```
 
-### 2. Set up the database
-
-Create a free Supabase project, copy the connection string into `backend/.env`, then:
+### 2. Configure
 
 ```bash
-cd backend
-npx prisma db push     # creates tables
-npx prisma db seed     # seeds default settings
+copy .env.example .env       # Windows
+# cp .env.example .env       # macOS/Linux
 ```
 
-### 3. Run locally
+Fill in your API keys in `.env` (at minimum `DATABASE_URL` and `GROQ_API_KEY`).
+
+### 3. Seed the database
 
 ```bash
-# Terminal 1 — backend
-cd backend
-npm run dev
-
-# Terminal 2 — frontend
-cd frontend
-npm run dev
+python seed.py
 ```
 
-Open [http://localhost:5173](http://localhost:5173). The status indicator should show **API: ok**.
+### 4. Run
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+Open [http://localhost:8000](http://localhost:8000).
 
 ## API Keys Needed
 
 | Service | Purpose | Free tier |
 |---------|---------|-----------|
 | Supabase | PostgreSQL database | 500 MB |
-| Anthropic | AI email writing (Claude) | Pay-as-you-go |
+| Groq | AI email writing (Llama 3.3 70B) | 30 req/min |
 | Apollo.io | Company/contact discovery | 50 credits/month |
-| Hunter.io | Email verification | 25 searches/month |
+| ZeroBounce | Email verification | 100/month |
 | Gmail API | Sending & tracking emails | Free with OAuth |
-| Upstash | Redis for BullMQ job queue | 10K commands/day |
 
-## Build Sessions
+## API Docs
 
-1. **Project setup** — folder structure, Prisma schema, Express boilerplate *(this session)*
-2. **Dashboard UI** — stats cards, outreach table, pipeline chart
-3. **Scraper agent** — Apollo API + Playwright fallback + Hunter.io verification
-4. **AI email writer** — Claude API integration + prompt engineering
-5. **Email sender** — Gmail OAuth + tracking pixel + follow-up scheduler
-6. **Settings page** — Monaco prompt editor + target config
-7. **Polish & deploy** — error handling, mobile responsiveness, Vercel + Railway
+FastAPI auto-generates interactive docs at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ## License
 

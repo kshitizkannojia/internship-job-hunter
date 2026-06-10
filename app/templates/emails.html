@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Emails — Internship Hunter{% endblock %}
+{% block nav_emails %}nav-active{% endblock %}
+{% block page_title %}Emails{% endblock %}
+
+{% block content %}
+<div x-data="emailsPage()" x-init="loadEmails()" class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-900">Email Drafts</h2>
+      <p class="text-sm text-gray-500">Review, edit, and approve AI-generated emails before sending.</p>
+    </div>
+    <div class="flex gap-2">
+      <button @click="generateEmails()" :disabled="generating"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-accent-600 px-4 py-2 text-sm font-medium text-white hover:bg-accent-700 disabled:opacity-50">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <span x-text="generating ? 'Generating...' : 'Generate Emails'"></span>
+      </button>
+      <button @click="sendApproved()"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+        Send Approved
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="flex gap-1 rounded-lg border bg-gray-50 p-1">
+    <template x-for="f in filters" :key="f">
+      <button @click="filter = f; loadEmails()"
+              class="rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors"
+              :class="filter === f ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              x-text="f"></button>
+    </template>
+  </div>
+
+  <!-- Email list -->
+  <div x-show="loading" class="flex h-32 items-center justify-center text-sm text-gray-400">Loading...</div>
+
+  <div x-show="!loading && emails.length === 0" class="rounded-xl border bg-white p-8 text-center text-sm text-gray-400">
+    No emails found. Run the scraper first, then click "Generate Emails" to create drafts.
+  </div>
+
+  <div x-show="!loading && emails.length > 0" class="space-y-3">
+    <template x-for="email in emails" :key="email.id">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 hover:bg-gray-50 transition-colors">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 cursor-pointer" @click="selectedEmail = email">
+            <div class="flex items-center gap-2 mb-1">
+              <p class="text-sm font-medium text-gray-900" x-text="email.company?.name || 'Unknown Company'"></p>
+              <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    :class="'badge-' + email.status" x-text="email.status"></span>
+            </div>
+            <p class="text-sm text-accent-600" x-text="email.subjectA"></p>
+            <p class="mt-1 text-xs text-gray-500 line-clamp-2" x-text="email.body"></p>
+            <p class="mt-1.5 text-[11px] text-gray-400">
+              Created <span x-text="new Date(email.createdAt).toLocaleDateString()"></span>
+              <span x-show="email.sentAt"> · Sent <span x-text="new Date(email.sentAt).toLocaleDateString()"></span></span>
+            </p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button @click="selectedEmail = email" class="rounded-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100" title="Preview">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+            <button x-show="email.status === 'draft'" @click="approve(email.id)"
+                    class="rounded-lg p-2 text-green-600 hover:text-green-700 hover:bg-green-50" title="Approve">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Email preview slide-over -->
+  <div x-show="selectedEmail" x-transition.opacity class="panel-overlay" @click="selectedEmail = null"></div>
+  <div class="slide-panel" :class="selectedEmail ? 'open' : ''">
+    <template x-if="selectedEmail">
+      <div class="flex flex-col h-full">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+          <h3 class="text-lg font-semibold" x-text="selectedEmail.company?.name || 'Email Preview'"></h3>
+          <button @click="selectedEmail = null" class="text-gray-400 hover:text-gray-600">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase">Subject A</p>
+            <p class="text-sm font-medium" x-text="selectedEmail.subjectA"></p>
+          </div>
+          <div x-show="selectedEmail.subjectB">
+            <p class="text-xs font-medium text-gray-500 uppercase">Subject B</p>
+            <p class="text-sm" x-text="selectedEmail.subjectB"></p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase mb-1">Body</p>
+            <div class="rounded-lg bg-gray-50 p-4 text-sm whitespace-pre-line" x-text="selectedEmail.body"></div>
+          </div>
+          <div x-show="selectedEmail.followupBody">
+            <p class="text-xs font-medium text-gray-500 uppercase mb-1">Follow-up (after 3 days)</p>
+            <div class="rounded-lg bg-gray-50 p-4 text-sm whitespace-pre-line" x-text="selectedEmail.followupBody"></div>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button x-show="selectedEmail.status === 'draft'" @click="approve(selectedEmail.id); selectedEmail = null;"
+                    class="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
+              Approve
+            </button>
+            <button @click="copyBody()" class="rounded-lg border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              Copy Body
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function emailsPage() {
+  return {
+    emails: [],
+    filter: 'all',
+    filters: ['all', 'draft', 'approved', 'sent', 'opened', 'replied'],
+    loading: true,
+    generating: false,
+    selectedEmail: null,
+
+    async loadEmails() {
+      this.loading = true;
+      const params = this.filter === 'all' ? 'limit=50' : `status=${this.filter}&limit=50`;
+      const res = await fetch(`/api/emails?${params}`);
+      const data = await res.json();
+      this.emails = data.emails || [];
+      this.loading = false;
+    },
+
+    async approve(id) {
+      await fetch(`/api/emails/${id}/approve`, { method: 'POST' });
+      await this.loadEmails();
+    },
+
+    async generateEmails() {
+      this.generating = true;
+      try {
+        await fetch('/api/agent/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'writer' }),
+        });
+        // Poll until done
+        const poll = setInterval(async () => {
+          const res = await fetch('/api/agent/status');
+          const run = await res.json();
+          if (run.status !== 'running') {
+            clearInterval(poll);
+            this.generating = false;
+            await this.loadEmails();
+          }
+        }, 3000);
+      } catch {
+        this.generating = false;
+      }
+    },
+
+    async sendApproved() {
+      await fetch('/api/agent/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'sender' }),
+      });
+      setTimeout(() => this.loadEmails(), 3000);
+    },
+
+    copyBody() {
+      if (this.selectedEmail) {
+        navigator.clipboard.writeText(this.selectedEmail.body);
+      }
+    },
+  };
+}
+</script>
+{% endblock %}
