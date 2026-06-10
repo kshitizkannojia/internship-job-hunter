@@ -1,0 +1,103 @@
+// Prisma schema for Internship Hunter
+// Uses PostgreSQL via Supabase (free tier)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Companies ────────────────────────────────────────────────
+// Each row = one company we've identified as a target.
+// Status tracks where it is in the outreach pipeline.
+
+model Company {
+  id           String   @id @default(uuid())
+  name         String
+  website      String?
+  contactName  String?  @map("contact_name")
+  contactEmail String?  @map("contact_email")
+  contactTitle String?  @map("contact_title")
+  linkedinUrl  String?  @map("linkedin_url")
+  industry     String?
+  location     String?
+  size         String?  // e.g. "11-50", "51-200"
+  techStack    String[] @map("tech_stack")
+  recentNews   String?  @map("recent_news")
+  roleHint     String?  @map("role_hint")
+
+  // Pipeline status: discovered | verified | emailed | replied | interview | rejected | no_match
+  status    String   @default("discovered")
+  source    String?  // "apollo" | "linkedin" | "manual"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  emails Email[]
+
+  @@map("companies")
+}
+
+// ── Emails ───────────────────────────────────────────────────
+// Stores every email draft and its lifecycle (draft → approved → sent → opened → replied).
+
+model Email {
+  id            String    @id @default(uuid())
+  companyId     String    @map("company_id")
+  subjectA      String    @map("subject_a")      // A/B subject line variant A
+  subjectB      String?   @map("subject_b")      // A/B subject line variant B
+  chosenSubject String?   @map("chosen_subject")  // which one was actually sent
+  body          String
+  followupBody  String?   @map("followup_body")
+
+  // Lifecycle: draft | approved | sent | opened | replied | bounced | follow_up_sent
+  status        String    @default("draft")
+  sentAt        DateTime? @map("sent_at")
+  openedAt      DateTime? @map("opened_at")
+  repliedAt     DateTime? @map("replied_at")
+  followupSentAt DateTime? @map("followup_sent_at")
+
+  // Gmail metadata for tracking
+  gmailMessageId String?  @map("gmail_message_id")
+  trackingPixelId String? @map("tracking_pixel_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("emails")
+}
+
+// ── Agent Runs ───────────────────────────────────────────────
+// Logs each time the scraper/writer agent runs so we can show
+// pipeline status and history on the dashboard.
+
+model AgentRun {
+  id             String    @id @default(uuid())
+  type           String    // "scraper" | "writer" | "sender"
+  status         String    @default("running") // running | completed | failed
+  startedAt      DateTime  @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  companiesFound Int       @default(0) @map("companies_found")
+  emailsWritten  Int       @default(0) @map("emails_written")
+  emailsSent     Int       @default(0) @map("emails_sent")
+  errors         String[]
+  config         Json?     // snapshot of the target config used
+
+  @@map("agent_runs")
+}
+
+// ── Settings ─────────────────────────────────────────────────
+// Key-value store for app-wide config: AI prompt, target filters,
+// daily send limit, Gmail OAuth tokens, etc.
+
+model Setting {
+  key       String   @id
+  value     String   // JSON-stringified for complex values
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
