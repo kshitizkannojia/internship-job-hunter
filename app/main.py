@@ -5,21 +5,24 @@ Run with: uvicorn app.main:app --reload --port 8000
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.config import get_settings
 from app.database import create_tables
 from app.routes import companies, emails, agent, stats, settings, auth, tracking
 from app.services.scheduler import start_scheduler, stop_scheduler
 
+# Path to Vite build output
+DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown logic."""
-    # ── Startup ──────────────────────────────
     print("Starting Internship Hunter...")
     try:
         await create_tables()
@@ -29,7 +32,6 @@ async def lifespan(app: FastAPI):
     start_scheduler()
     print(f"Server ready on http://localhost:{get_settings().port}")
     yield
-    # ── Shutdown ─────────────────────────────
     stop_scheduler()
     print("Shutting down...")
 
@@ -37,14 +39,18 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Internship Hunter",
     description="AI-powered job outreach system",
-    version="2.0.0",
+    version="3.0.0",
     lifespan=lifespan,
 )
 
-# ── Static files & templates ─────────────────────────────────
-BASE_DIR = Path(__file__).resolve().parent
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+# ── CORS ────────────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ── API routes ───────────────────────────────────────────────
 app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
@@ -56,25 +62,24 @@ app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(tracking.router, prefix="/track", tags=["Tracking"])
 
 
-# ── Page routes (serve HTML templates) ───────────────────────
-
-@app.get("/", include_in_schema=False)
-async def dashboard_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
-
-
-@app.get("/emails", include_in_schema=False)
-async def emails_page(request: Request):
-    return templates.TemplateResponse("emails.html", {"request": request})
-
-
-@app.get("/settings", include_in_schema=False)
-async def settings_page(request: Request):
-    return templates.TemplateResponse("settings.html", {"request": request})
-
-
 # ── Health check ─────────────────────────────────────────────
 
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+# ── Serve React SPA (built with Vite) ────────────────────────
+# Mount the assets directory for JS/CSS/images
+if DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
+
+    # Catch-all: serve index.html for any non-API route (SPA client-side routing)
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(request: Request, full_path: str):
+        # If the file exists in dist (e.g. favicon, robots.txt), serve it
+        file_path = DIST_DIR / full_path
+        if full_path and file_path.is_file():
+            return FileResponse(file_path)
+        # Otherwise serve index.html — React Router handles the route
+        return FileResponse(DIST_DIR / "index.html")

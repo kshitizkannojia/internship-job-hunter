@@ -2,150 +2,229 @@
 
 {% block title %}Dashboard — Internship Hunter{% endblock %}
 {% block nav_dashboard %}nav-active{% endblock %}
+{% block nav_dashboard_mobile %}nav-active{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
 <div x-data="dashboard()" x-init="loadAll()" class="space-y-6">
 
   <!-- Header row -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div class="section-enter flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-semibold text-gray-900">Overview</h2>
-      <p class="text-sm text-gray-500">Track your outreach pipeline at a glance.</p>
+      <h2 class="text-lg font-semibold">Overview</h2>
+      <p class="text-sm text-[#666]">Track your outreach pipeline at a glance.</p>
     </div>
     <div class="flex gap-2">
       <button @click="startAgent('scraper')" :disabled="agentRunning"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-accent-600 px-4 py-2 text-sm font-medium text-white hover:bg-accent-700 disabled:opacity-50">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span x-text="agentRunning ? 'Agent Running...' : 'Start Agent'"></span>
+              class="btn-primary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50">
+        <svg class="h-4 w-4" :class="agentRunning ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <template x-if="!agentRunning"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></template>
+          <template x-if="agentRunning"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></template>
+        </svg>
+        <span x-text="agentRunning ? 'Running...' : 'Start Agent'"></span>
       </button>
       <button @click="exportCSV()"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              class="btn-outline inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium">
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Export CSV
+        Export
       </button>
     </div>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <template x-for="card in statsCards" :key="card.label">
-      <div class="rounded-xl border border-gray-200 bg-white p-5">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-gray-500" x-text="card.label"></p>
-          <div class="rounded-lg p-2" :class="card.bgClass">
-            <svg class="h-4 w-4" :class="card.iconClass" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="card.icon"/>
-            </svg>
+  <!-- Stats Cards (staggered entrance) -->
+  <div class="section-enter grid grid-cols-2 gap-3 lg:grid-cols-4 anim-stagger">
+    <template x-if="loading">
+      <div class="contents">
+        <template x-for="i in 4" :key="i">
+          <div class="card p-5"><div class="skeleton h-3 w-20 mb-3"></div><div class="skeleton h-7 w-12"></div></div>
+        </template>
+      </div>
+    </template>
+    <template x-if="!loading">
+      <div class="contents">
+        <template x-for="card in statsCards" :key="card.label">
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <p class="text-[11px] font-medium uppercase tracking-wider text-[#555]" x-text="card.label"></p>
+              <div class="stat-icon">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" :d="card.icon"/></svg>
+              </div>
+            </div>
+            <p class="mt-2 text-2xl font-bold stat-number" x-text="card.value"
+               x-effect="if(card.value !== undefined) { animateCounter($el, card.value) }"></p>
+            <p class="mt-0.5 text-[11px] text-[#444]" x-text="card.sub"></p>
           </div>
-        </div>
-        <p class="mt-2 text-2xl font-bold text-gray-900" x-text="card.value"></p>
+        </template>
       </div>
     </template>
   </div>
 
-  <!-- Pipeline + Chart row -->
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <!-- Pipeline Status -->
-    <div class="rounded-xl border border-gray-200 bg-white p-5">
-      <h3 class="text-sm font-medium text-gray-500 mb-4">Pipeline Status</h3>
+  <!-- Pipeline + Chart -->
+  <div class="section-enter grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+    <!-- Agent Pipeline -->
+    <div class="card p-5">
+      <h3 class="text-[11px] font-medium uppercase tracking-wider mb-5 text-[#555]">Agent Pipeline</h3>
       <div class="flex items-center justify-between">
-        <template x-for="(step, i) in pipeline" :key="step.label">
+        <template x-for="(step, i) in pipeline" :key="step.key">
           <div class="flex items-center" :class="i < pipeline.length - 1 ? 'flex-1' : ''">
-            <div class="flex flex-col items-center">
-              <div class="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-                   :class="step.active ? 'bg-accent-600 text-white' : 'bg-gray-100 text-gray-400'"
-                   x-text="step.count"></div>
-              <span class="mt-1 text-[11px] text-gray-500" x-text="step.label"></span>
+            <div class="pipeline-step flex flex-col items-center gap-1.5">
+              <div class="step-circle flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all"
+                   :class="step.completed ? 'border-green-500 bg-green-900/20 text-green-400'
+                         : step.running ? 'border-accent-500 bg-accent-900/20 text-accent-400 active'
+                         : 'border-[#222] text-[#555]'">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="step.icon"/>
+                </svg>
+              </div>
+              <span class="text-[10px] font-medium"
+                    :class="step.completed ? 'text-green-400'
+                          : step.running ? 'text-accent-400'
+                          : 'text-[#555]'"
+                    x-text="step.label"></span>
             </div>
             <div x-show="i < pipeline.length - 1"
-                 class="pipeline-line mx-2" :class="step.active ? 'active' : ''"></div>
+                 class="mx-1 sm:mx-2 h-0.5 flex-1 min-w-[0.75rem] sm:min-w-[1.5rem] transition-colors"
+                 :class="step.completed ? 'bg-green-500' : 'bg-[#1a1a1a]'"></div>
           </div>
         </template>
       </div>
+      <div class="mt-4 text-center">
+        <span x-show="agentRun?.status === 'running'" class="text-xs text-accent-400"
+              x-text="'Agent running — ' + (agentRun?.companiesFound||0) + ' companies found'"></span>
+        <span x-show="agentRun?.status === 'completed'" class="text-xs text-green-400"
+              x-text="'Last run: ' + (agentRun?.companiesFound||0) + ' companies, ' + (agentRun?.emailsSent||0) + ' emails'"></span>
+        <span x-show="!agentRun || agentRun?.status === 'idle'" class="text-xs text-[#444]">No active run. Click "Start Agent" to begin.</span>
+      </div>
     </div>
 
-    <!-- Reply Rate Chart -->
-    <div class="rounded-xl border border-gray-200 bg-white p-5">
-      <h3 class="text-sm font-medium text-gray-500 mb-4">Reply Rate</h3>
-      <canvas id="replyChart" height="160"></canvas>
+    <!-- Reply Rate -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-1">
+        <div>
+          <h3 class="text-[11px] font-medium uppercase tracking-wider text-[#555]">Reply Rate</h3>
+          <p class="text-[11px] mt-0.5 text-[#444]">Last 7 days vs industry avg (6%)</p>
+        </div>
+        <div class="text-right">
+          <p class="text-2xl font-bold" x-text="(stats.replyRate||0) + '%'"></p>
+          <p class="text-[10px] text-[#444]">your rate</p>
+        </div>
+      </div>
+      <div style="height:208px"><canvas id="replyChart"></canvas></div>
     </div>
+
   </div>
 
   <!-- Outreach Table -->
-  <div class="rounded-xl border border-gray-200 bg-white">
-    <div class="border-b px-5 py-3">
-      <h3 class="text-sm font-medium text-gray-500">Recent Outreach</h3>
+  <div class="section-enter card">
+    <div class="border-b border-[#1a1a1a] px-5 py-3 flex items-center justify-between gap-3">
+      <h3 class="text-[11px] font-medium uppercase tracking-wider shrink-0 text-[#555]">Recent Outreach</h3>
+      <div class="flex items-center gap-2">
+        <input type="text" x-model="searchQuery" @input.debounce.300ms="loadAll()" placeholder="Search companies..."
+               class="rounded-lg border border-[#222] bg-[#050505] px-3 py-1.5 text-xs w-40 text-gray-200 focus:outline-none focus:ring-2 focus:ring-accent-500">
+        <span class="text-[11px] shrink-0 text-[#555]" x-text="totalCompanies + ' total'"></span>
+      </div>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            <th class="px-5 py-3">Company</th>
-            <th class="px-5 py-3">Contact</th>
-            <th class="px-5 py-3">Industry</th>
-            <th class="px-5 py-3">Location</th>
-            <th class="px-5 py-3">Status</th>
+          <tr class="border-b border-[#1a1a1a] text-left text-[11px] font-medium uppercase tracking-wider text-[#555]">
+            <th class="px-5 py-2.5">Company</th>
+            <th class="px-5 py-2.5 hidden sm:table-cell">Contact</th>
+            <th class="px-5 py-2.5 hidden md:table-cell">Industry</th>
+            <th class="px-5 py-2.5 hidden lg:table-cell">Location</th>
+            <th class="px-5 py-2.5">Status</th>
           </tr>
         </thead>
         <tbody>
+          <template x-if="loading">
+            <div class="contents">
+              <template x-for="i in 5" :key="i">
+                <tr class="border-b border-[#111]">
+                  <td class="px-5 py-3"><div class="skeleton h-4 w-28"></div></td>
+                  <td class="px-5 py-3 hidden sm:table-cell"><div class="skeleton h-4 w-24"></div></td>
+                  <td class="px-5 py-3 hidden md:table-cell"><div class="skeleton h-4 w-20"></div></td>
+                  <td class="px-5 py-3 hidden lg:table-cell"><div class="skeleton h-4 w-20"></div></td>
+                  <td class="px-5 py-3"><div class="skeleton h-5 w-16 rounded-full"></div></td>
+                </tr>
+              </template>
+            </div>
+          </template>
           <template x-for="company in companies" :key="company.id">
-            <tr class="border-b hover:bg-gray-50 cursor-pointer" @click="selectedCompany = company">
-              <td class="px-5 py-3 font-medium text-gray-900" x-text="company.name"></td>
-              <td class="px-5 py-3 text-gray-600" x-text="company.contactName || '—'"></td>
-              <td class="px-5 py-3 text-gray-600" x-text="company.industry || '—'"></td>
-              <td class="px-5 py-3 text-gray-600" x-text="company.location || '—'"></td>
+            <tr class="border-b border-[#111] cursor-pointer hover:bg-[#0d0d0d] transition-colors"
+                @click="selectedCompany = company">
               <td class="px-5 py-3">
-                <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
-                      :class="'badge-' + company.status"
-                      x-text="company.status"></span>
+                <p class="font-medium text-sm" x-text="company.name"></p>
+                <p class="text-xs sm:hidden text-[#555]" x-text="company.contactName || ''"></p>
+              </td>
+              <td class="px-5 py-3 hidden sm:table-cell text-[#888]" x-text="company.contactName || '—'"></td>
+              <td class="px-5 py-3 hidden md:table-cell text-[#888]" x-text="company.industry || '—'"></td>
+              <td class="px-5 py-3 hidden lg:table-cell text-[#888]" x-text="company.location || '—'"></td>
+              <td class="px-5 py-3">
+                <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium" :class="'badge-' + company.status" x-text="company.status"></span>
               </td>
             </tr>
           </template>
-          <tr x-show="companies.length === 0">
-            <td colspan="5" class="px-5 py-8 text-center text-gray-400">
-              No companies yet. Click "Start Agent" to begin scraping.
+          <tr x-show="!loading && companies.length === 0">
+            <td colspan="5" class="px-5 py-12 text-center">
+              <svg class="mx-auto h-10 w-10 mb-3 text-[#333]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+              <p class="text-sm font-medium text-[#666]">No companies yet</p>
+              <p class="text-xs mt-1 text-[#444]">Click "Start Agent" to begin scraping.</p>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+    <!-- Pagination -->
+    <div x-show="totalCompanies > pageSize" class="border-t border-[#1a1a1a] px-5 py-3 flex items-center justify-between">
+      <button @click="page > 0 && (page--, loadAll())" :disabled="page === 0"
+              class="btn-outline rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-30">Previous</button>
+      <span class="text-[11px] text-[#555]"
+            x-text="'Page ' + (page+1) + ' of ' + Math.ceil(totalCompanies / pageSize)"></span>
+      <button @click="(page+1) * pageSize < totalCompanies && (page++, loadAll())"
+              :disabled="(page+1) * pageSize >= totalCompanies"
+              class="btn-outline rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-30">Next</button>
+    </div>
   </div>
 
-  <!-- Company detail slide-over -->
+  <!-- Company slide-over -->
   <div x-show="selectedCompany" x-transition.opacity class="panel-overlay" @click="selectedCompany = null"></div>
   <div class="slide-panel" :class="selectedCompany ? 'open' : ''">
     <template x-if="selectedCompany">
       <div class="flex flex-col h-full">
-        <div class="flex items-center justify-between border-b px-6 py-4">
-          <h3 class="text-lg font-semibold" x-text="selectedCompany.name"></h3>
-          <button @click="selectedCompany = null" class="text-gray-400 hover:text-gray-600">
+        <div class="flex items-center justify-between border-b border-[#1a1a1a] px-6 py-4">
+          <h3 class="text-base font-semibold" x-text="selectedCompany.name"></h3>
+          <button @click="selectedCompany = null" class="rounded-lg p-1 text-[#555] hover:bg-[#111]">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
-        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div>
-            <p class="text-xs font-medium text-gray-500 uppercase">Contact</p>
-            <p class="text-sm" x-text="selectedCompany.contactName || 'Unknown'"></p>
-            <p class="text-sm text-accent-600" x-text="selectedCompany.contactEmail || 'No email'"></p>
+            <p class="text-[11px] font-medium uppercase tracking-wider mb-1 text-[#555]">Contact</p>
+            <p class="text-sm font-medium" x-text="selectedCompany.contactName || 'Unknown'"></p>
+            <p class="text-sm text-accent-400" x-text="selectedCompany.contactEmail || 'No email'"></p>
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 uppercase">Website</p>
-            <a :href="selectedCompany.website" target="_blank" class="text-sm text-accent-600 hover:underline" x-text="selectedCompany.website || '—'"></a>
+            <p class="text-[11px] font-medium uppercase tracking-wider mb-1 text-[#555]">Website</p>
+            <a :href="selectedCompany.website" target="_blank" class="text-sm text-accent-400 hover:underline" x-text="selectedCompany.website || '—'"></a>
           </div>
           <div x-show="selectedCompany.techStack && selectedCompany.techStack.length > 0">
-            <p class="text-xs font-medium text-gray-500 uppercase mb-1">Tech Stack</p>
+            <p class="text-[11px] font-medium uppercase tracking-wider mb-1.5 text-[#555]">Tech Stack</p>
             <div class="flex flex-wrap gap-1.5">
               <template x-for="tech in (selectedCompany.techStack || [])" :key="tech">
-                <span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-700" x-text="tech"></span>
+                <span class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-[#111] text-[#aaa] border border-[#222]" x-text="tech"></span>
               </template>
             </div>
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 uppercase">Status</p>
-            <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium mt-1"
-                  :class="'badge-' + selectedCompany.status"
-                  x-text="selectedCompany.status"></span>
+            <p class="text-[11px] font-medium uppercase tracking-wider mb-1 text-[#555]">Status</p>
+            <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium" :class="'badge-' + selectedCompany.status" x-text="selectedCompany.status"></span>
+          </div>
+          <div class="pt-3 border-t border-[#1a1a1a]">
+            <button @click="deleteCompany(selectedCompany.id)"
+                    class="w-full rounded-lg border border-red-900 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-950 transition-colors">
+              Delete Company
+            </button>
           </div>
         </div>
       </div>
@@ -158,109 +237,198 @@
 <script>
 function dashboard() {
   return {
-    stats: {},
-    companies: [],
-    agentRun: null,
-    selectedCompany: null,
+    stats: {}, companies: [], agentRun: null, selectedCompany: null, loading: true,
+    searchQuery: '', page: 0, pageSize: 15, totalCompanies: 0,
 
-    get agentRunning() {
-      return this.agentRun?.status === 'running';
-    },
+    get agentRunning() { return this.agentRun?.status === 'running'; },
 
     get statsCards() {
+      const s = this.stats;
       return [
-        { label: 'Companies', value: this.stats.totalCompanies || 0, icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', bgClass: 'bg-blue-50', iconClass: 'text-blue-600' },
-        { label: 'Emails Sent', value: this.stats.emailsSent || 0, icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', bgClass: 'bg-amber-50', iconClass: 'text-amber-600' },
-        { label: 'Replies', value: this.stats.replies || 0, icon: 'M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6', bgClass: 'bg-green-50', iconClass: 'text-green-600' },
-        { label: 'Interviews', value: this.stats.interviews || 0, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', bgClass: 'bg-purple-50', iconClass: 'text-purple-600' },
+        { label:'Companies', value:s.totalCompanies||0, sub:(s.verifiedCompanies||0)+' verified', icon:'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+        { label:'Sent', value:s.emailsSent||0, sub:(s.drafts||0)+' drafts pending', icon:'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+        { label:'Replies', value:s.replies||0, sub:(s.replyRate||0)+'% rate', icon:'M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6' },
+        { label:'Interviews', value:s.interviews||0, sub:'booked', icon:'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
       ];
     },
 
     get pipeline() {
-      const s = this.stats;
-      return [
-        { label: 'Discovered', count: s.totalCompanies || 0, active: (s.totalCompanies || 0) > 0 },
-        { label: 'Verified', count: s.verifiedCompanies || 0, active: (s.verifiedCompanies || 0) > 0 },
-        { label: 'Emailed', count: s.emailsSent || 0, active: (s.emailsSent || 0) > 0 },
-        { label: 'Replied', count: s.replies || 0, active: (s.replies || 0) > 0 },
-        { label: 'Interview', count: s.interviews || 0, active: (s.interviews || 0) > 0 },
+      const run = this.agentRun;
+      const runType = run?.type;
+      const isRunning = run?.status === 'running';
+      const isDone = run?.status === 'completed';
+
+      const stages = [
+        { key:'scraping', label:'Scraping', icon:'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+        { key:'verifying', label:'Verifying', icon:'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+        { key:'writing', label:'Writing', icon:'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+        { key:'sending', label:'Sending', icon:'M12 19l9 2-9-18-9 18 9-2zm0 0v-8' },
+        { key:'tracking', label:'Tracking', icon:'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
       ];
+
+      const stageMap = { scraper:'scraping', writer:'writing', sender:'sending' };
+      const activeKey = isRunning ? (stageMap[runType]||'scraping') : null;
+      const activeIdx = activeKey ? stages.findIndex(s=>s.key===activeKey) : -1;
+
+      return stages.map((st, i) => ({
+        ...st,
+        completed: isDone || (activeIdx >= 0 && i < activeIdx),
+        running: st.key === activeKey,
+      }));
     },
 
     async loadAll() {
-      await Promise.all([this.loadStats(), this.loadCompanies(), this.loadAgent()]);
-      this.renderChart();
-    },
-
-    async loadStats() {
-      const res = await fetch('/api/stats');
-      this.stats = await res.json();
-    },
-
-    async loadCompanies() {
-      const res = await fetch('/api/companies?limit=10');
-      const data = await res.json();
-      this.companies = data.companies || [];
-    },
-
-    async loadAgent() {
-      const res = await fetch('/api/agent/status');
-      this.agentRun = await res.json();
+      this.loading = true;
+      try {
+        const searchParam = this.searchQuery ? `&search=${encodeURIComponent(this.searchQuery)}` : '';
+        const [sr, cr, ar] = await Promise.all([
+          fetch('/api/stats'),
+          fetch(`/api/companies?limit=${this.pageSize}&offset=${this.page * this.pageSize}${searchParam}`),
+          fetch('/api/agent/status'),
+        ]);
+        this.stats = await sr.json();
+        const companyData = await cr.json();
+        this.companies = companyData.companies || [];
+        this.totalCompanies = companyData.total || 0;
+        this.agentRun = await ar.json();
+      } catch(e) { console.error(e); }
+      this.loading = false;
+      this.$nextTick(() => this.renderChart());
     },
 
     async startAgent(type) {
-      const res = await fetch('/api/agent/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type }),
-      });
+      const res = await fetch('/api/agent/start', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type}) });
       if (res.ok) {
         this.agentRun = await res.json();
-        // Poll until done
+        this.$dispatch('toast', {message:'Agent started', type:'success'});
         const poll = setInterval(async () => {
-          await this.loadAgent();
-          if (this.agentRun?.status !== 'running') {
-            clearInterval(poll);
-            await this.loadAll();
-          }
+          this.agentRun = await (await fetch('/api/agent/status')).json();
+          if (this.agentRun?.status !== 'running') { clearInterval(poll); this.$dispatch('toast',{message:'Agent finished',type:'success'}); await this.loadAll(); }
         }, 3000);
       }
     },
 
+    async deleteCompany(id) {
+      if (!confirm('Delete this company and all its emails?')) return;
+      try {
+        await fetch(`/api/companies/${id}`, {method:'DELETE'});
+        this.$dispatch('toast', {message:'Company deleted', type:'success'});
+        this.selectedCompany = null;
+        await this.loadAll();
+      } catch(e) { this.$dispatch('toast', {message:'Failed to delete', type:'error'}); }
+    },
+
     exportCSV() {
-      const rows = [['Name', 'Contact', 'Email', 'Industry', 'Location', 'Status']];
-      for (const c of this.companies) {
-        rows.push([c.name, c.contactName || '', c.contactEmail || '', c.industry || '', c.location || '', c.status]);
+      const rows = [['Name','Contact','Email','Industry','Location','Status']];
+      for (const c of this.companies) rows.push([c.name, c.contactName||'', c.contactEmail||'', c.industry||'', c.location||'', c.status]);
+      const csv = rows.map(r => r.map(v => '"' + (v||'').replace(/"/g,'""') + '"').join(',')).join('\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'companies.csv'; a.click();
+      this.$dispatch('toast', {message:'CSV exported', type:'success'});
+    },
+
+    buildChartData() {
+      const daily = this.stats.dailyChart;
+      if (daily && daily.length > 0) {
+        return daily.map(d => ({ date: d.date, rate: d.rate }));
       }
-      const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'companies.csv';
-      a.click();
+      const now = new Date();
+      return Array.from({length:7}, (_,i) => {
+        const d = new Date(now); d.setDate(d.getDate() - (6-i));
+        return { date: d.toLocaleDateString('en-US', {month:'short', day:'numeric'}), rate: 0 };
+      });
     },
 
     renderChart() {
       const ctx = document.getElementById('replyChart');
       if (!ctx) return;
-      new Chart(ctx, {
-        type: 'doughnut',
+      if (this._chart) this._chart.destroy();
+      const data = this.buildChartData();
+      const c2d = ctx.getContext('2d');
+      const gradient = c2d.createLinearGradient(0, 0, 0, 208);
+      gradient.addColorStop(0.05, 'rgba(147, 51, 234, 0.3)');
+      gradient.addColorStop(0.95, 'rgba(147, 51, 234, 0)');
+
+      const avgLabelPlugin = {
+        id: 'avgLabel',
+        afterDatasetsDraw(chart) {
+          const meta = chart.getDatasetMeta(1);
+          if (!meta || !meta.data.length) return;
+          const last = meta.data[meta.data.length - 1];
+          const cx = chart.ctx;
+          cx.save();
+          cx.font = '10px Inter, system-ui, sans-serif';
+          cx.fillStyle = '#555';
+          cx.textAlign = 'left';
+          cx.fillText('Industry avg', last.x + 6, last.y + 3);
+          cx.restore();
+        }
+      };
+
+      this._chart = new Chart(ctx, {
+        type: 'line',
         data: {
-          labels: ['Replies', 'No Reply'],
-          datasets: [{
-            data: [this.stats.replies || 0, Math.max(0, (this.stats.emailsSent || 0) - (this.stats.replies || 0))],
-            backgroundColor: ['#4b7cf3', '#e2e8f0'],
-            borderWidth: 0,
-          }],
+          labels: data.map(d => d.date),
+          datasets: [
+            {
+              label: 'Reply Rate',
+              data: data.map(d => d.rate),
+              borderColor: '#9333ea',
+              backgroundColor: gradient,
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#9333ea',
+              pointBorderColor: '#000',
+              pointBorderWidth: 2,
+            },
+            {
+              label: 'Industry Avg (6%)',
+              data: data.map(() => 6),
+              borderColor: '#333',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              pointHoverRadius: 0,
+              fill: false,
+            },
+          ],
         },
         options: {
           responsive: true,
-          cutout: '70%',
+          maintainAspectRatio: false,
+          layout: { padding: { right: 70 } },
+          interaction: { intersect: false, mode: 'index' },
+          scales: {
+            x: {
+              grid: { color: 'rgba(30,30,30,0.8)', drawBorder: false, borderDash: [3, 3] },
+              ticks: { font: { size: 11, family: 'Inter, system-ui, sans-serif' }, color: '#444' },
+            },
+            y: {
+              min: 0,
+              grid: { color: 'rgba(30,30,30,0.8)', drawBorder: false, borderDash: [3, 3] },
+              ticks: { font: { size: 11, family: 'Inter, system-ui, sans-serif' }, color: '#444', callback: v => v + '%' },
+            },
+          },
           plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16, font: { size: 12 } } },
-            tooltip: { enabled: true },
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#111',
+              titleColor: '#e5e5e5',
+              titleFont: { size: 12, family: 'Inter, system-ui, sans-serif' },
+              bodyColor: '#888',
+              bodyFont: { size: 12, family: 'Inter, system-ui, sans-serif' },
+              borderColor: '#222',
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 8,
+              displayColors: false,
+              callbacks: { label: c => c.dataset.label.replace(/ \(6%\)/, '') + ': ' + c.parsed.y + '%' },
+            },
           },
         },
+        plugins: [avgLabelPlugin],
       });
     },
   };

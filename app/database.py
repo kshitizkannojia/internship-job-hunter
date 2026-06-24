@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
     pass
 
 
-# Lazy initialization — engine is created on first use, not at import time.
+# Lazy initialization
 _engine = None
 _session_factory = None
 
@@ -25,12 +25,12 @@ def _get_engine():
     if _engine is None:
         from app.config import get_settings
         cfg = get_settings()
-        _engine = create_async_engine(
-            cfg.database_url,
-            echo=(cfg.env == "development"),
-            pool_size=5,
-            max_overflow=10,
-        )
+        # SQLite doesn't support pool_size/max_overflow
+        kwargs = {"echo": (cfg.env == "development")}
+        if "sqlite" not in cfg.database_url:
+            kwargs["pool_size"] = 5
+            kwargs["max_overflow"] = 10
+        _engine = create_async_engine(cfg.database_url, **kwargs)
     return _engine
 
 
@@ -47,7 +47,7 @@ def AsyncSessionLocal():
 
 
 async def get_db():
-    """FastAPI dependency — yields an async DB session, auto-closes."""
+    """FastAPI dependency - yields an async DB session, auto-closes."""
     async with _get_session_factory()() as session:
         try:
             yield session

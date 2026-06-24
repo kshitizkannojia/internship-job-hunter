@@ -52,6 +52,32 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
         select(func.count(Company.id)).where(Company.status == "interview")
     )).scalar() or 0
 
+    # Daily breakdown for chart (last 7 days)
+    daily_chart = []
+    for i in range(7):
+        day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=6 - i)
+        day_end = day_start + timedelta(days=1)
+
+        day_sent = (await db.execute(
+            select(func.count(Email.id)).where(
+                Email.sent_at >= day_start, Email.sent_at < day_end
+            )
+        )).scalar() or 0
+
+        day_replies = (await db.execute(
+            select(func.count(Email.id)).where(
+                Email.replied_at >= day_start, Email.replied_at < day_end
+            )
+        )).scalar() or 0
+
+        day_rate = round((day_replies / day_sent * 100), 1) if day_sent > 0 else 0
+        daily_chart.append({
+            "date": day_start.strftime("%b %d"),
+            "sent": day_sent,
+            "replied": day_replies,
+            "rate": day_rate,
+        })
+
     return {
         "totalCompanies": total_companies,
         "verifiedCompanies": verified,
@@ -65,4 +91,5 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
             "sentThisWeek": recent_sent,
             "repliesThisWeek": recent_replies,
         },
+        "dailyChart": daily_chart,
     }

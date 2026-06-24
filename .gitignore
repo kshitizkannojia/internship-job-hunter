@@ -25,6 +25,6 @@ alembic/versions/*.py
 .vscode/
 .idea/
 
-# Old Node.js (can delete these folders)
+# Node.js
 node_modules/
-dist/
+frontend/dist/

@@ -109,6 +109,8 @@ async def _reply_check_job():
     """Check Gmail for replies to sent emails."""
     print("Scheduler: checking for replies...")
 
+    import asyncio
+    import functools
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
     from app.database import AsyncSessionLocal
@@ -136,8 +138,6 @@ async def _reply_check_job():
                 client_secret=cfg.gmail_client_secret,
             )
 
-            service = build("gmail", "v1", credentials=creds)
-
             sent_emails = (await db.execute(
                 select(Email)
                 .options(selectinload(Email.company))
@@ -148,17 +148,17 @@ async def _reply_check_job():
                 .limit(20)
             )).scalars().all()
 
+            loop = asyncio.get_event_loop()
+
             for email in sent_emails:
                 try:
-                    msg = service.users().messages().get(
-                        userId="me", id=email.gmail_message_id, format="metadata"
-                    ).execute()
-
-                    thread = service.users().threads().get(
-                        userId="me", id=msg["threadId"], format="minimal"
-                    ).execute()
-
-                    if len(thread.get("messages", [])) > 1:
+                    # Run sync Gmail API calls in thread pool
+                    replied = await loop.run_in_executor(
+                        None, functools.partial(
+                            _check_reply_sync, creds, email.gmail_message_id
+                        )
+                    )
+                    if replied:
                         email.status = "replied"
                         email.replied_at = datetime.utcnow()
                         if email.company:
@@ -173,3 +173,16 @@ async def _reply_check_job():
 
         except Exception as e:
             print(f"Scheduler: reply check error: {e}")
+
+
+def _check_reply_sync(creds, gmail_message_id: str) -> bool:
+    """Sync Gmail thread check — called via run_in_executor."""
+    from googleapiclient.discovery import build
+    service = build("gmail", "v1", credentials=creds)
+    msg = service.users().messages().get(
+        userId="me", id=gmail_message_id, format="metadata"
+    ).execute()
+    thread = service.users().threads().get(
+        userId="me", id=msg["threadId"], format="minimal"
+    ).execute()
+    return len(thread.get("messages", [])) > 1

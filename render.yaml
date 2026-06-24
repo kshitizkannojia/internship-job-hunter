@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: internship-hunter
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: APOLLO_API_KEY
+        sync: false
+      - key: ZEROBOUNCE_API_KEY
+        sync: false
+      - key: ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: NODE_VERSION
+        value: "22.12.0"

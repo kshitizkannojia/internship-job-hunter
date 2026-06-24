@@ -124,7 +124,16 @@ async def _get_gmail_tokens(db) -> dict | None:
 
 
 async def _send_via_gmail(to: str, subject: str, html_body: str, tokens: dict) -> str:
-    """Send email through Gmail API. Returns the Gmail message ID."""
+    """Send email through Gmail API. Runs sync googleapiclient in a thread."""
+    import functools
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, functools.partial(_send_via_gmail_sync, to, subject, html_body, tokens)
+    )
+
+
+def _send_via_gmail_sync(to: str, subject: str, html_body: str, tokens: dict) -> str:
+    """Synchronous Gmail send — called via run_in_executor."""
     cfg = get_settings()
 
     creds = Credentials(

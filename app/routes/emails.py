@@ -7,7 +7,7 @@ POST  /api/emails/:id/approve — approve a draft
 PUT   /api/emails/:id       — edit a draft
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -51,7 +51,7 @@ async def get_email(email_id: str, db: AsyncSession = Depends(get_db)):
     stmt = select(Email).options(selectinload(Email.company)).where(Email.id == email_id)
     email = (await db.execute(stmt)).scalar_one_or_none()
     if not email:
-        return {"error": "Not found"}, 404
+        raise HTTPException(status_code=404, detail="Not found")
     return _serialize(email)
 
 
@@ -59,9 +59,9 @@ async def get_email(email_id: str, db: AsyncSession = Depends(get_db)):
 async def approve_email(email_id: str, db: AsyncSession = Depends(get_db)):
     email = await db.get(Email, email_id)
     if not email:
-        return {"error": "Not found"}, 404
+        raise HTTPException(status_code=404, detail="Not found")
     if email.status != "draft":
-        return {"error": f"Cannot approve email with status '{email.status}'"}, 400
+        raise HTTPException(status_code=400, detail=f"Cannot approve email with status '{email.status}'")
 
     email.status = "approved"
     await db.flush()
@@ -72,7 +72,7 @@ async def approve_email(email_id: str, db: AsyncSession = Depends(get_db)):
 async def update_email(email_id: str, data: dict, db: AsyncSession = Depends(get_db)):
     email = await db.get(Email, email_id)
     if not email:
-        return {"error": "Not found"}, 404
+        raise HTTPException(status_code=404, detail="Not found")
 
     if "subjectA" in data:
         email.subject_a = data["subjectA"]
@@ -85,6 +85,16 @@ async def update_email(email_id: str, data: dict, db: AsyncSession = Depends(get
 
     await db.flush()
     return _serialize(email)
+
+
+@router.delete("/{email_id}")
+async def delete_email(email_id: str, db: AsyncSession = Depends(get_db)):
+    email = await db.get(Email, email_id)
+    if not email:
+        raise HTTPException(status_code=404, detail="Not found")
+    await db.delete(email)
+    await db.flush()
+    return {"ok": True}
 
 
 # ── Helpers ──────────────────────────────────────────────────

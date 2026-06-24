@@ -8,7 +8,7 @@ GET  /api/agent/history     — list past runs
 """
 
 import asyncio
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -34,7 +34,7 @@ async def start_agent(data: dict = {}, db: AsyncSession = Depends(get_db)):
     job_type = data.get("type", "scraper")
 
     if job_type not in RUNNERS:
-        return {"error": f"Unknown type: {job_type}"}, 400
+        raise HTTPException(status_code=400, detail=f"Unknown type: {job_type}")
 
     # Prevent concurrent runs of the same type
     existing = (await db.execute(

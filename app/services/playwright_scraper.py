@@ -35,7 +35,10 @@ async def scrape_companies(config: dict) -> list[dict]:
                 timeout=15000,
             )
 
-            await page.wait_for_selector("div#search", timeout=10000).catch_(lambda _: None)
+            try:
+                await page.wait_for_selector("div#search", timeout=10000)
+            except Exception:
+                pass  # page may not have #search div
 
             # Extract search results
             raw_results = await page.evaluate("""() => {

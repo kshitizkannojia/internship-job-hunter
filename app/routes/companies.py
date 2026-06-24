@@ -7,7 +7,7 @@ GET  /api/companies/:id   — get one
 PUT  /api/companies/:id   — update
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 
@@ -52,7 +52,7 @@ async def list_companies(
 async def get_company(company_id: str, db: AsyncSession = Depends(get_db)):
     company = await db.get(Company, company_id)
     if not company:
-        return {"error": "Not found"}, 404
+        raise HTTPException(status_code=404, detail="Not found")
     return _serialize(company)
 
 
@@ -83,7 +83,7 @@ async def create_company(data: dict, db: AsyncSession = Depends(get_db)):
 async def update_company(company_id: str, data: dict, db: AsyncSession = Depends(get_db)):
     company = await db.get(Company, company_id)
     if not company:
-        return {"error": "Not found"}, 404
+        raise HTTPException(status_code=404, detail="Not found")
 
     for key, val in data.items():
         # Convert camelCase keys to snake_case attribute names
@@ -93,6 +93,16 @@ async def update_company(company_id: str, data: dict, db: AsyncSession = Depends
 
     await db.flush()
     return _serialize(company)
+
+
+@router.delete("/{company_id}")
+async def delete_company(company_id: str, db: AsyncSession = Depends(get_db)):
+    company = await db.get(Company, company_id)
+    if not company:
+        raise HTTPException(status_code=404, detail="Not found")
+    await db.delete(company)
+    await db.flush()
+    return {"ok": True}
 
 
 # ── Helpers ──────────────────────────────────────────────────
